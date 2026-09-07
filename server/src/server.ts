@@ -50,6 +50,21 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 // Swagger docs
 setupSwagger(app);
 
+// Root route
+app.get("/", (_req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "Blackcoffer Dashboard API is running",
+    endpoints: {
+      health: "/health",
+      documentation: "/api-docs",
+      insights: "/api/insights",
+      filters: "/api/filters",
+      stats: "/api/stats",
+    },
+  });
+});
+
 // Health check
 app.get("/health", (_req, res) => {
   res.status(200).json({
