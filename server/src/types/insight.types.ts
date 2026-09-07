@@ -20,7 +20,6 @@ export interface IRawInsight {
   likelihood: string | number;
 }
 
-// Shape after cleaning / what MongoDB stores
 export interface IInsight extends Document {
   end_year: number | null;
   intensity: number;
@@ -41,7 +40,6 @@ export interface IInsight extends Document {
   likelihood: number;
 }
 
-// Query parameters that will hit GET /api/insights
 export interface IInsightFilters {
   end_year?: string;
   topic?: string;

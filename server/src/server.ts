@@ -16,7 +16,7 @@ const app: Application = express();
 const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI as string;
 
-// Security
+// Security & CORS
 app.use(helmet());
 app.use(
   cors({
@@ -25,32 +25,32 @@ app.use(
   })
 );
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { success: false, message: "Too many requests, please try again later." },
-});
-app.use("/api/", limiter);
+// Rate Limiter
+app.use(
+  "/api",
+  rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 100,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { success: false, message: "Too many requests, please try again later." },
+  })
+);
 
-// Logging
+// Logging & Compression
 if (process.env.NODE_ENV !== "test") {
   app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
 }
-
-// Compression
 app.use(compression());
 
-// Body parsing
+// Body Parsing
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
-// Swagger docs
+// Swagger Documentation
 setupSwagger(app);
 
-// Root route
+// Root & Health Endpoints
 app.get("/", (_req, res) => {
   res.status(200).json({
     success: true,
@@ -65,7 +65,6 @@ app.get("/", (_req, res) => {
   });
 });
 
-// Health check
 app.get("/health", (_req, res) => {
   res.status(200).json({
     status: "UP",
@@ -74,18 +73,18 @@ app.get("/health", (_req, res) => {
   });
 });
 
-// API routes
+// API Routes
 app.use("/api", apiRoutes);
 
-// 404 handler
+// 404 Handler
 app.use((req, res) => {
   res.status(404).json({ success: false, message: `Route ${req.originalUrl} not found` });
 });
 
-// Global error handler
+// Centralized Error Handler
 app.use(errorHandler);
 
-// Connect DB then start server (only if not running under test runner)
+// Database Connection & Server Listener
 if (process.env.NODE_ENV !== "test") {
   mongoose
     .connect(MONGO_URI)
