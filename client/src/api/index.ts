@@ -1,5 +1,7 @@
 import { apiClient } from "./client";
 import type {
+  CompletenessResponse,
+  CompletenessStats,
   FilterOptions,
   FilterParams,
   FiltersResponse,
@@ -211,6 +213,20 @@ export const MOCK_INSIGHTS = Array.from({ length: 96 }, (_, i) => ({
   published: null,
 }));
 
+export const MOCK_COMPLETENESS: CompletenessStats = {
+  total: 1000,
+  complete: 263,
+  incomplete: 737,
+  missingFieldBreakdown: {
+    topic: 93,
+    sector: 229,
+    region: 453,
+    pestle: 93,
+    source: 1,
+    country: 650,
+  },
+};
+
 export const fetchFilters = async (): Promise<FilterOptions> => {
   const response = await apiClient.get<FiltersResponse>("/filters");
   const d = response.data;
@@ -254,6 +270,7 @@ export const fetchStats = async (params: FilterParams = {}): Promise<StatsData> 
     "source",
     "country",
     "end_year",
+    "completeness",
   ];
   allowedKeys.forEach((key) => {
     const val = (params as any)[key];
@@ -281,3 +298,21 @@ export const fetchStats = async (params: FilterParams = {}): Promise<StatsData> 
 
   return stats;
 };
+
+export const fetchCompletenessStats = async (): Promise<CompletenessStats> => {
+  try {
+    const response = await apiClient.get<CompletenessResponse>("/stats/completeness");
+    const d = response.data;
+    if (d.data) {
+      return d.data;
+    }
+    if (d.total !== undefined && d.missingFieldBreakdown) {
+      return d as CompletenessStats;
+    }
+    return MOCK_COMPLETENESS;
+  } catch (error) {
+    console.warn("Failed to fetch completeness stats, using fallback mock data:", error);
+    return MOCK_COMPLETENESS;
+  }
+};
+

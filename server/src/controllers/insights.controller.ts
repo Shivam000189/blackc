@@ -26,6 +26,10 @@
  *         name: end_year
  *         schema: { type: string }
  *       - in: query
+ *         name: completeness
+ *         schema: { type: string, enum: [all, complete, incomplete], default: all }
+ *         description: Filter records by data completeness (all, complete only, incomplete with null fields)
+ *       - in: query
  *         name: search
  *         schema: { type: string }
  *       - in: query
@@ -49,29 +53,72 @@ import { Insight } from "../models/Insight";
 import { PaginatedRequest } from "../middleware/paginate";
 
 export const getInsights = async (req: PaginatedRequest, res: Response): Promise<void> => {
-  const { end_year, topic, sector, region, pestle, source, country, search, sortBy = "added", order = "desc" } = req.query;
+  const {
+    end_year,
+    topic,
+    sector,
+    region,
+    pestle,
+    source,
+    country,
+    completeness,
+    search,
+    sortBy = "added",
+    order = "desc",
+  } = req.query;
   const { page = 1, limit = 25, skip = 0 } = req.pagination || {};
 
-  const query: any = {};
+  const conditions: any[] = [];
 
-  if (end_year) query.end_year = Number(end_year);
-  if (topic) query.topic = topic as string;
-  if (sector) query.sector = sector as string;
-  if (region) query.region = region as string;
-  if (pestle) query.pestle = pestle as string;
-  if (source) query.source = source as string;
-  if (country) query.country = country as string;
+  if (end_year) conditions.push({ end_year: Number(end_year) });
+  if (topic) conditions.push({ topic: topic as string });
+  if (sector) conditions.push({ sector: sector as string });
+  if (region) conditions.push({ region: region as string });
+  if (pestle) conditions.push({ pestle: pestle as string });
+  if (source) conditions.push({ source: source as string });
+  if (country) conditions.push({ country: country as string });
+
+  // Data Completeness Filter
+  if (completeness === "incomplete") {
+    conditions.push({
+      $or: [
+        { topic: null },
+        { sector: null },
+        { region: null },
+        { pestle: null },
+        { source: null },
+        { country: null },
+      ],
+    });
+  } else if (completeness === "complete") {
+    conditions.push({
+      $nor: [
+        { topic: null },
+        { sector: null },
+        { region: null },
+        { pestle: null },
+        { source: null },
+        { country: null },
+      ],
+    });
+  }
 
   // Text search across title and insight
   if (search) {
-    query.$or = [
-      { title: { $regex: search as string, $options: "i" } },
-      { insight: { $regex: search as string, $options: "i" } },
-    ];
+    conditions.push({
+      $or: [
+        { title: { $regex: search as string, $options: "i" } },
+        { insight: { $regex: search as string, $options: "i" } },
+      ],
+    });
   }
 
+  const query = conditions.length > 0 ? { $and: conditions } : {};
+
   const sortDirection = order === "asc" ? 1 : -1;
-  const sortField = ["added", "intensity", "relevance", "likelihood", "end_year"].includes(sortBy as string)
+  const sortField = ["added", "intensity", "relevance", "likelihood", "end_year"].includes(
+    sortBy as string
+  )
     ? (sortBy as string)
     : "added";
 

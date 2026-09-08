@@ -38,7 +38,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
       </div>
 
       {isExpanded && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5 pt-1 animate-in fade-in duration-150">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 xl:grid-cols-8 gap-2.5 pt-1 animate-in fade-in duration-150">
           <FilterSelect
             label="Topic"
             value={filters.topic}
@@ -81,6 +81,20 @@ export const FilterBar: React.FC<FilterBarProps> = ({
             options={endYears}
             onChange={(v) => onUpdate("end_year", v)}
           />
+          <div className="flex-1 min-w-[120px]">
+            <label className="block text-[11px] font-medium text-[#666] mb-1">
+              Data Completeness
+            </label>
+            <select
+              value={filters.completeness || "all"}
+              onChange={(e) => onUpdate("completeness", e.target.value)}
+              className="w-full px-2.5 py-1.5 bg-white border border-[#ddd] rounded-md text-xs text-[#444] focus:outline-none focus:border-[#4355b9] focus:ring-1 focus:ring-[#4355b9]/20 transition cursor-pointer"
+            >
+              <option value="all">All records</option>
+              <option value="complete">Complete only</option>
+              <option value="incomplete">Incomplete only</option>
+            </select>
+          </div>
         </div>
       )}
     </div>

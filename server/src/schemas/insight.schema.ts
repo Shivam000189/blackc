@@ -8,6 +8,7 @@ export const insightFiltersSchema = z.object({
   pestle: z.string().min(1).optional(),
   source: z.string().min(1).optional(),
   country: z.string().min(1).optional(),
+  completeness: z.enum(["all", "complete", "incomplete"]).optional(),
   search: z.string().min(1).max(100).optional(),
   sortBy: z.enum(["added", "intensity", "relevance", "likelihood", "end_year"]).optional(),
   order: z.enum(["asc", "desc"]).optional(),

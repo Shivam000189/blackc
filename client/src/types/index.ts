@@ -38,11 +38,37 @@ export interface FilterParams {
   source?: string;
   country?: string;
   end_year?: string | number;
+  completeness?: "all" | "complete" | "incomplete";
   search?: string;
   sortBy?: "added" | "intensity" | "relevance" | "likelihood" | "end_year" | "title" | "topic" | "sector" | "region" | "country";
   order?: "asc" | "desc";
   page?: number;
   limit?: number;
+}
+
+export interface MissingFieldBreakdown {
+  topic: number;
+  sector: number;
+  region: number;
+  pestle: number;
+  source: number;
+  country: number;
+}
+
+export interface CompletenessStats {
+  total: number;
+  complete: number;
+  incomplete: number;
+  missingFieldBreakdown: MissingFieldBreakdown;
+}
+
+export interface CompletenessResponse {
+  success?: boolean;
+  data?: CompletenessStats;
+  total?: number;
+  complete?: number;
+  incomplete?: number;
+  missingFieldBreakdown?: MissingFieldBreakdown;
 }
 
 export interface InsightsResponse {

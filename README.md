@@ -36,7 +36,12 @@ An interactive full-stack data visualization dashboard and analytics platform bu
 
 ## Features & Assignment Checklist
 
-- [x] **Data Ingestion & Persistence**: 906 records from the provided `jsondata.json` cleaned, validated, and seeded into a MongoDB Atlas database via [`server/src/scripts/seed.ts`](server/src/scripts/seed.ts).
+- [x] **Data Ingestion & Persistence**: All 1,000 records from `jsondata.json` cleaned, indexed, and seeded into MongoDB Atlas via [`server/src/scripts/seed.ts`](server/src/scripts/seed.ts).
+- [x] **Data Completeness Quality Engine**:
+  - 3-way toggle / filter (`all`, `complete`, `incomplete`) on both charts and master data table.
+  - Classification based on the 6 core dimensions: `topic`, `sector`, `region`, `pestle`, `source`, and `country`.
+  - Dedicated `GET /api/stats/completeness` endpoint providing total, complete, incomplete counts and granular per-field missing breakdowns.
+  - Interactive top-level quality banner displaying live completeness progress and criteria popover with per-field counts.
 - [x] **RESTful Backend API**: Structured Node.js + Express TypeScript API with dedicated modular routes, schema validations, aggregation pipelines, and centralized error handling.
 - [x] **Interactive Dashboard Visualizations**:
   - **Average Intensity by Topic**: Bar chart displaying intensity distribution across industry domains.
@@ -54,6 +59,7 @@ An interactive full-stack data visualization dashboard and analytics platform bu
   - Total Countries covered
   - Total Geographical Regions analyzed
 - [x] **Filter & Segmentation Engine** (Wired dynamically to backend database):
+  - **Data Completeness** filter (`All records`, `Complete only`, `Incomplete only`)
   - **Topic** filter
   - **Sector** filter
   - **Region** filter
@@ -195,6 +201,7 @@ npm run dev      # Starts Vite dev server on port 5173
 | `GET` | `/health` | Health check & database connection status |
 | `GET` | `/api/filters` | Distinct values for Topic, Sector, Region, PESTLE, Source, Country, End Year |
 | `GET` | `/api/stats` | Aggregated statistical data across all 6 visualization dimensions |
+| `GET` | `/api/stats/completeness` | Overall data completeness metrics and missing required fields breakdown |
 | `GET` | `/api/insights` | Paginated, filtered, sorted, and searchable insight records |
 | `GET` | `/api-docs` | Interactive Swagger API documentation UI |
 
@@ -202,6 +209,7 @@ npm run dev      # Starts Vite dev server on port 5173
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
+| `completeness` | string | `all` | Data completeness filter: `all` (default), `complete` (all 6 core fields present), `incomplete` (missing $\ge 1$ required field) |
 | `topic` | string | — | Filter by Topic |
 | `sector` | string | — | Filter by Sector |
 | `region` | string | — | Filter by Region |
@@ -219,16 +227,20 @@ npm run dev      # Starts Vite dev server on port 5173
 
 ## Data Notes & Architectural Assumptions
 
-1. **Missing Brief Fields**:
+1. **Data Completeness Standard**:
+   - A record is classified as **Complete** when all 6 core attributes are populated: `topic`, `sector`, `region`, `pestle`, `source`, and `country`.
+   - Records with `null` in any of these 6 fields are classified as **Incomplete** and can be inspected via the `completeness=incomplete` filter.
+   - Out of the 1,000 seeded records: **263** are fully complete and **737** are missing one or more required fields (e.g. 650 missing country, 453 missing region, 229 missing sector, 93 missing topic, 93 missing pestle, 1 missing source).
+2. **Missing Brief Fields**:
    - The original assignment brief mentioned **City** and **SWOT** filters. Inspection of `jsondata.json` confirmed that these fields do not exist in the raw dataset.
    - PESTLE analysis (`pestle`) and economic sectors (`sector`) were implemented to deliver the required multi-level segmentation.
-2. **Data Cleansing**:
+3. **Data Cleansing**:
    - In [`server/src/utils/cleanRecord.ts`](server/src/utils/cleanRecord.ts), raw entries with empty string values (`""`) or missing numerical values are normalized to `null` to ensure consistent indexing and prevent NaN in aggregations.
    - Aggregations and distinct queries filter out non-existent keys using `{ $nin: [null, ""] }`.
-3. **Table & Visualization Fallbacks**:
+4. **Table & Visualization Fallbacks**:
    - In the frontend table, missing text fields gracefully render as an em dash (`—`) rather than displaying empty or broken layouts.
    - Recharts tooltips and legends format zero/null fields safely.
-4. **Production Security & Optimization**:
+5. **Production Security & Optimization**:
    - Express server enforces Helmet headers with `crossOriginResourcePolicy: false` to allow cross-origin asset loading.
    - Rate limiting protects `/api` endpoints against burst abuse.
    - Vite production build utilizes manual chunk splitting to keep vendor bundles compact and cacheable.

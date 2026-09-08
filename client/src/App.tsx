@@ -3,6 +3,7 @@ import type { FilterOptions, FilterParams, InsightsResponse, StatsData } from ".
 import { fetchFilters, fetchInsights, fetchStats, MOCK_FILTERS, MOCK_INSIGHTS, MOCK_STATS } from "./api";
 import { Sidebar } from "./components/layout/Sidebar";
 import { StatCards } from "./components/layout/StatCards";
+import { CompletenessBanner } from "./components/layout/CompletenessBanner";
 import { FilterBar } from "./components/filters/FilterBar";
 import { TopicIntensityChart } from "./components/charts/TopicIntensityChart";
 import { YearTrendChart } from "./components/charts/YearTrendChart";
@@ -23,6 +24,7 @@ function useFilterState() {
     source: "",
     country: "",
     end_year: "",
+    completeness: "all",
     search: "",
     sortBy: "intensity",
     order: "desc",
@@ -44,6 +46,7 @@ function useFilterState() {
       source: "",
       country: "",
       end_year: "",
+      completeness: "all",
       search: "",
       sortBy: "intensity",
       order: "desc",
@@ -79,6 +82,8 @@ export function App() {
       ["source", filters.source],
       ["country", filters.country],
       ["end_year", filters.end_year],
+      ["completeness", filters.completeness && filters.completeness !== "all" ? filters.completeness : undefined],
+      ["search", filters.search],
       ["sortBy", filters.sortBy],
       ["order", filters.order],
       ["page", filters.page],
@@ -208,6 +213,12 @@ export function App() {
           stats={stats}
           totalRecords={insightsData?.total}
           loading={statsLoading}
+        />
+
+        {/* Data Completeness Quality Banner */}
+        <CompletenessBanner
+          currentCompleteness={filters.completeness}
+          onCompletenessChange={(val) => update("completeness", val)}
         />
 
         {/* Filter & Segment Dataset on BOTH Pages */}

@@ -24,7 +24,7 @@ export interface IInsight extends Document {
   end_year: number | null;
   intensity: number;
   sector: string | null;
-  topic: string;
+  topic: string | null;
   insight: string;
   url: string;
   region: string | null;
@@ -34,8 +34,8 @@ export interface IInsight extends Document {
   published: Date | null;
   country: string | null;
   relevance: number;
-  pestle: string;
-  source: string;
+  pestle: string | null;
+  source: string | null;
   title: string;
   likelihood: number;
 }

@@ -41,6 +41,22 @@ const buildBaseMatch = (query: any) => {
   if (query.pestle) match.pestle = query.pestle as string;
   if (query.source) match.source = query.source as string;
   if (query.country) match.country = query.country as string;
+
+  const missingConditions = [
+    { topic: null },
+    { sector: null },
+    { region: null },
+    { pestle: null },
+    { source: null },
+    { country: null },
+  ];
+
+  if (query.completeness === "incomplete") {
+    match.$or = missingConditions;
+  } else if (query.completeness === "complete") {
+    match.$nor = missingConditions;
+  }
+
   return match;
 };
 
@@ -145,3 +161,84 @@ export const getStats = async (req: Request, res: Response): Promise<void> => {
     },
   });
 };
+
+/**
+ * @swagger
+ * /stats/completeness:
+ *   get:
+ *     summary: Get overall data completeness statistics and missing required field breakdown
+ *     responses:
+ *       200:
+ *         description: Completeness counts and missing field breakdown
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     total:
+ *                       type: integer
+ *                       example: 1000
+ *                     complete:
+ *                       type: integer
+ *                       example: 263
+ *                     incomplete:
+ *                       type: integer
+ *                       example: 737
+ *                     missingFieldBreakdown:
+ *                       type: object
+ *                       properties:
+ *                         topic: { type: integer, example: 93 }
+ *                         sector: { type: integer, example: 229 }
+ *                         region: { type: integer, example: 453 }
+ *                         pestle: { type: integer, example: 93 }
+ *                         source: { type: integer, example: 1 }
+ *                         country: { type: integer, example: 650 }
+ */
+export const getCompletenessStats = async (_req: Request, res: Response): Promise<void> => {
+  const missingConditions = [
+    { topic: null },
+    { sector: null },
+    { region: null },
+    { pestle: null },
+    { source: null },
+    { country: null },
+  ];
+
+  const [total, incomplete, missingTopic, missingSector, missingRegion, missingPestle, missingSource, missingCountry] =
+    await Promise.all([
+      Insight.countDocuments({}),
+      Insight.countDocuments({ $or: missingConditions }),
+      Insight.countDocuments({ topic: null }),
+      Insight.countDocuments({ sector: null }),
+      Insight.countDocuments({ region: null }),
+      Insight.countDocuments({ pestle: null }),
+      Insight.countDocuments({ source: null }),
+      Insight.countDocuments({ country: null }),
+    ]);
+
+  const complete = total - incomplete;
+
+  res.status(200).json({
+    success: true,
+    data: {
+      total,
+      complete,
+      incomplete,
+      missingFieldBreakdown: {
+        topic: missingTopic,
+        sector: missingSector,
+        region: missingRegion,
+        pestle: missingPestle,
+        source: missingSource,
+        country: missingCountry,
+      },
+    },
+  });
+};
+

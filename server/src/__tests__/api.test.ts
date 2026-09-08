@@ -54,6 +54,50 @@ describe("API Endpoints", () => {
       expect(res.status).toBe(400);
       expect(res.body.success).toBe(false);
     });
+    it("should filter by completeness (complete vs incomplete)", async () => {
+      await Insight.create([
+        {
+          intensity: 6,
+          topic: "oil",
+          sector: "Energy",
+          region: "North America",
+          country: "USA",
+          pestle: "Economic",
+          source: "EIA",
+          insight: "Complete record",
+          url: "http://test.com",
+          relevance: 2,
+          title: "Complete 1",
+          likelihood: 3,
+          added: new Date(),
+        },
+        {
+          intensity: 8,
+          topic: null,
+          sector: "Energy",
+          region: null,
+          country: null,
+          pestle: "Economic",
+          source: "EIA",
+          insight: "Incomplete record",
+          url: "http://test2.com",
+          relevance: 3,
+          title: "Incomplete 1",
+          likelihood: 4,
+          added: new Date(),
+        },
+      ]);
+
+      const resComplete = await request(app).get("/api/insights?completeness=complete");
+      expect(resComplete.status).toBe(200);
+      expect(resComplete.body.data).toHaveLength(1);
+      expect(resComplete.body.data[0].title).toBe("Complete 1");
+
+      const resIncomplete = await request(app).get("/api/insights?completeness=incomplete");
+      expect(resIncomplete.status).toBe(200);
+      expect(resIncomplete.body.data).toHaveLength(1);
+      expect(resIncomplete.body.data[0].title).toBe("Incomplete 1");
+    });
   });
 
   describe("GET /api/filters", () => {
@@ -81,6 +125,49 @@ describe("API Endpoints", () => {
       expect(res.body.data.intensityByTopic).toBeDefined();
       expect(res.body.data.insightsByYear).toBeDefined();
       expect(res.body.data.intensityByCountry).toBeDefined();
+    });
+
+    it("should return completeness stats at /api/stats/completeness", async () => {
+      await Insight.create([
+        {
+          intensity: 6,
+          topic: "oil",
+          sector: "Energy",
+          region: "North America",
+          country: "USA",
+          pestle: "Economic",
+          source: "EIA",
+          insight: "Complete record",
+          url: "http://test.com",
+          relevance: 2,
+          title: "Complete 1",
+          likelihood: 3,
+          added: new Date(),
+        },
+        {
+          intensity: 8,
+          topic: null,
+          sector: null,
+          region: null,
+          country: null,
+          pestle: null,
+          source: null,
+          insight: "Incomplete record",
+          url: "http://test2.com",
+          relevance: 3,
+          title: "Incomplete 1",
+          likelihood: 4,
+          added: new Date(),
+        },
+      ]);
+
+      const res = await request(app).get("/api/stats/completeness");
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.total).toBe(2);
+      expect(res.body.data.complete).toBe(1);
+      expect(res.body.data.incomplete).toBe(1);
+      expect(res.body.data.missingFieldBreakdown.topic).toBe(1);
     });
   });
 });

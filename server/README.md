@@ -135,6 +135,7 @@ server/
 #### `GET /api/stats`
 - **Description**: Executes multi-pipeline MongoDB aggregations across 6 analytical dimensions. When filter query parameters are provided, aggregations are dynamically scoped to match the filtered subset.
 - **Query Parameters (Optional Filters)**:
+  - `completeness` *(string)*: `all` (default), `complete`, or `incomplete`
   - `topic` *(string)*: Filter by Topic
   - `sector` *(string)*: Filter by Sector
   - `region` *(string)*: Filter by Region
@@ -151,32 +152,27 @@ server/
   6. `topicRegionHeatmap`: Cross-tabulation of average intensity by Topic and Region.
 
 - **Response**: `200 OK`
+
+---
+
+#### `GET /api/stats/completeness`
+- **Description**: Returns overall data completeness statistics and a breakdown of missing values across the 6 core dimensions (`topic`, `sector`, `region`, `pestle`, `source`, `country`).
+- **Response**: `200 OK`
 ```json
 {
   "success": true,
   "data": {
-    "intensityByTopic": [
-      { "topic": "oil", "avgIntensity": 12.67 },
-      { "topic": "gas", "avgIntensity": 11.25 }
-    ],
-    "insightsByYear": [
-      { "year": 2016, "count": 18 },
-      { "year": 2017, "count": 42 }
-    ],
-    "intensityByCountry": [
-      { "country": "United States of America", "avgIntensity": 11.2, "avgRelevance": 3.8 }
-    ],
-    "sectorDistribution": [
-      { "sector": "Energy", "count": 312 },
-      { "sector": "Financial services", "count": 154 }
-    ],
-    "regionDistribution": [
-      { "region": "Northern America", "count": 356 },
-      { "region": "Asia", "count": 287 }
-    ],
-    "topicRegionHeatmap": [
-      { "topic": "oil", "region": "Northern America", "avgIntensity": 14.2 }
-    ]
+    "total": 1000,
+    "complete": 263,
+    "incomplete": 737,
+    "missingFieldBreakdown": {
+      "topic": 93,
+      "sector": 229,
+      "region": 453,
+      "pestle": 93,
+      "source": 1,
+      "country": 650
+    }
   }
 }
 ```
@@ -191,6 +187,7 @@ server/
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
+| `completeness` | string | `all` | Filter by completeness: `all` (default), `complete` (all 6 core fields present), `incomplete` (missing $\ge 1$ required field) |
 | `topic` | string | — | Filter by Topic |
 | `sector` | string | — | Filter by Sector |
 | `region` | string | — | Filter by Region |
@@ -209,10 +206,10 @@ server/
 {
   "success": true,
   "count": 25,
-  "total": 906,
+  "total": 1000,
   "page": 1,
   "limit": 25,
-  "totalPages": 37,
+  "totalPages": 40,
   "data": [
     {
       "_id": "64f9b8c3a1e2d45b78901234",
@@ -275,14 +272,18 @@ export interface IInsight {
 
 ## Data Notes & Cleansing Logic
 
-1. **Missing Brief Fields**:
+1. **Data Completeness Standard**:
+   - A record is classified as **Complete** when all 6 core attributes are populated: `topic`, `sector`, `region`, `pestle`, `source`, and `country`.
+   - Records with `null` in any of these 6 fields are classified as **Incomplete** and can be queried via `completeness=incomplete`.
+   - In MongoDB, all 1,000 raw documents are seeded; 263 are fully complete and 737 are incomplete across the 6 dimensions.
+2. **Missing Brief Fields**:
    - The original assignment mentioned `city` and `swot`. The provided `jsondata.json` dataset does not contain these fields.
    - PESTLE analysis (`pestle`) and industry categories (`sector`) are implemented as the dual-segmentation framework.
-2. **Sanitization (`server/src/utils/cleanRecord.ts`)**:
-   - Converts empty strings (`""`) into `null` to ensure accurate sparse indexing.
+3. **Sanitization (`server/src/utils/cleanRecord.ts`)**:
+   - Converts empty strings (`""`) into `null` to ensure accurate sparse indexing and predictable null queries.
    - Parses date strings into ISO `Date` objects.
    - Converts empty numerical values to numeric defaults or `null` to prevent aggregation calculation anomalies.
-3. **Optimized Aggregations**:
+4. **Optimized Aggregations**:
    - Distinct queries and statistical pipelines utilize `{ $nin: [null, ""] }` to ensure only valid data points are grouped.
 
 ---
