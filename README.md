@@ -237,16 +237,20 @@ npm run dev      # Starts Vite dev server on port 5173
 
 ## Screenshots
 
-<!-- TODO: Add actual dashboard screenshots or animated GIFs before final submission -->
+### 1. Analytics & Visualizations Overview
+![Analytics Overview](screenshots/dasboard.png)
 
-### 1. Analytics & Visualizations View
-![Analytics View Placeholder](TODO: Add screenshot here)
+### 2. Multi-Dimensional Charts & Metrics
+![Charts & Visualizations](screenshots/dasboard2.png)
 
-### 2. Master Insights Record Table
-![Table View Placeholder](TODO: Add screenshot here)
+### 3. Responsive Hover-Expandable Navigation
+![Sidebar Navigation](screenshots/sidebar.png)
 
-### 3. Filter Controls & Modal Inspection
-![Modal View Placeholder](TODO: Add screenshot here)
+### 4. Master Raw Insight Records Table
+![Master Records Table](screenshots/page2.png)
+
+### 5. Insight Detail Modal Dialog
+![Insight Detail Modal](screenshots/model.png)
 
 ---
 

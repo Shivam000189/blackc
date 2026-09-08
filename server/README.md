@@ -1,97 +1,324 @@
-# Blackcoffer Dashboard API
+# Blackcoffer Dashboard API Backend
 
-Node.js + TypeScript + Express + MongoDB backend for the data visualization dashboard.
+High-performance REST API built with Node.js, Express, TypeScript, and MongoDB for the Blackcoffer Data Visualization Dashboard. It provides multi-dimensional data aggregations, dynamic filter extraction, full-text regex search, and paginated master dataset queries.
 
-## Tech Stack
+---
 
-- **Runtime:** Node.js + TypeScript
-- **Framework:** Express.js
-- **Database:** MongoDB (Mongoose ODM)
-- **Validation:** Zod
-- **Documentation:** Swagger UI
-- **Testing:** Jest + Supertest
-- **Security:** Helmet, CORS, Express Rate Limit, Compression, Morgan
+## Live Links
+
+- **Live Base API**: [https://blackc.onrender.com](https://blackc.onrender.com)
+- **Live Health Check**: [https://blackc.onrender.com/health](https://blackc.onrender.com/health)
+- **Interactive Swagger Documentation**: [https://blackc.onrender.com/api-docs](https://blackc.onrender.com/api-docs)
+
+---
+
+## Tech Stack & Architecture
+
+- **Runtime & Language**: Node.js & TypeScript
+- **Web Framework**: Express.js
+- **Database & ODM**: MongoDB Atlas & Mongoose
+- **Validation Engine**: Zod (Strict schema validation on query parameters)
+- **API Documentation**: Swagger UI (`swagger-ui-express`, `swagger-jsdoc`)
+- **Automated Testing**: Jest & Supertest (`ts-jest`)
+- **Security & Performance**:
+  - `helmet`: Secure HTTP response headers
+  - `cors`: Dynamic origin whitelisting supporting local dev and production domains
+  - `express-rate-limit`: Rate limiting protection against burst traffic
+  - `compression`: Gzip response compression
+  - Graceful shutdown handling (`SIGTERM` & `SIGINT`)
+
+---
 
 ## Project Structure
 
 ```
-src/
-├── __tests__/          # Jest test suites
-├── config/             # Swagger configuration & DB/Env
-├── controllers/        # Route handlers
-├── middleware/         # Validation, pagination, error handling
-├── models/             # Mongoose schemas
-├── routes/             # API route definitions
-├── schemas/            # Zod validation schemas
-├── scripts/            # Database seed script
-├── types/              # TypeScript interfaces
-├── utils/              # Helper functions
-└── server.ts           # Application entry point
+server/
+├── data/
+│   └── jsondata.json           # Raw source dataset (906 records)
+├── src/
+│   ├── __tests__/              # Jest integration & route test suites
+│   ├── config/
+│   │   └── swagger.ts          # OpenAPI / Swagger JSDoc configuration
+│   ├── controllers/
+│   │   ├── filters.controller.ts  # Distinct filter metadata handler
+│   │   ├── insights.controller.ts # Paginated & filtered records query handler
+│   │   └── stats.controller.ts    # Aggregation pipelines across 6 dimensions
+│   ├── middleware/
+│   │   ├── errorHandler.ts     # Centralized error handler with production concealment
+│   │   ├── paginate.ts         # Query pagination parser & sanitizer
+│   │   └── validateRequest.ts  # Zod schema validation middleware
+│   ├── models/
+│   │   └── Insight.ts          # Mongoose schema with optimized compound indexes
+│   ├── routes/
+│   │   ├── filters.routes.ts   # /api/filters route definition
+│   │   ├── insights.routes.ts  # /api/insights route definition
+│   │   ├── stats.routes.ts     # /api/stats route definition
+│   │   └── index.ts            # Central API route aggregator
+│   ├── schemas/
+│   │   └── insight.schema.ts   # Zod validation schemas for query parameters
+│   ├── scripts/
+│   │   └── seed.ts             # Database seeding & data cleansing script
+│   ├── types/
+│   │   └── insight.types.ts    # TypeScript interfaces & types
+│   ├── utils/
+│   │   ├── asyncHandler.ts     # Async error forwarding wrapper
+│   │   └── cleanRecord.ts      # Null string and NaN sanitization utility
+│   └── server.ts               # Express application entry point & listener
+├── .env.example                # Environment variables template
+├── jest.config.js              # Jest configuration
+├── package.json                # Dependencies & npm scripts
+└── tsconfig.json               # TypeScript compiler options
 ```
 
-## Environment Variables
+---
 
-Create a `.env` file in the root:
+## API Routes & Endpoints Reference
 
+### 1. Health & Status
+
+#### `GET /health`
+- **Description**: Returns server liveness, uptime timestamp, and active MongoDB connection status.
+- **Access**: Public
+- **Response**: `200 OK`
+```json
+{
+  "status": "UP",
+  "timestamp": "2026-09-08T03:47:52.444Z",
+  "database": "connected"
+}
+```
+
+#### `GET /`
+- **Description**: Root entry point providing an overview and available API endpoints.
+- **Response**: `200 OK`
+```json
+{
+  "success": true,
+  "message": "Blackcoffer Dashboard API is running",
+  "endpoints": {
+    "health": "/health",
+    "documentation": "/api-docs",
+    "insights": "/api/insights",
+    "filters": "/api/filters",
+    "stats": "/api/stats"
+  }
+}
+```
+
+---
+
+### 2. Filters Endpoint
+
+#### `GET /api/filters`
+- **Description**: Retrieves distinct, non-empty values from the database for all 7 filter dropdowns. Used by the frontend to dynamically populate selector options.
+- **Access**: Public
+- **Response**: `200 OK`
+```json
+{
+  "success": true,
+  "data": {
+    "topics": ["Energy", "Oil", "Gas", "Finance", "Healthcare", "Technology", ...],
+    "sectors": ["Energy", "Financial services", "Manufacturing", "Retail", ...],
+    "regions": ["Africa", "Asia", "Central America", "Europe", "Northern America", ...],
+    "pestles": ["Economic", "Environmental", "Political", "Social", "Technological", ...],
+    "sources": ["Bloomberg", "EIA", "Gartner", "IEA", "World Bank", ...],
+    "countries": ["China", "Germany", "India", "Russia", "United States of America", ...],
+    "endYears": [2016, 2017, 2018, 2019, 2020, 2021, 2022, 2025, 2030, ...]
+  }
+}
+```
+
+---
+
+### 3. Aggregated Analytics & Statistics
+
+#### `GET /api/stats`
+- **Description**: Executes multi-pipeline MongoDB aggregations across 6 analytical dimensions. When filter query parameters are provided, aggregations are dynamically scoped to match the filtered subset.
+- **Query Parameters (Optional Filters)**:
+  - `topic` *(string)*: Filter by Topic
+  - `sector` *(string)*: Filter by Sector
+  - `region` *(string)*: Filter by Region
+  - `pestle` *(string)*: Filter by PESTLE
+  - `source` *(string)*: Filter by Source
+  - `country` *(string)*: Filter by Country
+  - `end_year` *(number)*: Filter by Target End Year
+- **Aggregated Dimensions Returned**:
+  1. `intensityByTopic`: Average intensity grouped by topic (sorted descending).
+  2. `insightsByYear`: Volume of insights grouped by target end year (sorted chronologically).
+  3. `intensityByCountry`: Average intensity and average relevance scored across countries.
+  4. `sectorDistribution`: Proportional insight count across economic sectors.
+  5. `regionDistribution`: Proportional insight count across global geographical regions.
+  6. `topicRegionHeatmap`: Cross-tabulation of average intensity by Topic and Region.
+
+- **Response**: `200 OK`
+```json
+{
+  "success": true,
+  "data": {
+    "intensityByTopic": [
+      { "topic": "oil", "avgIntensity": 12.67 },
+      { "topic": "gas", "avgIntensity": 11.25 }
+    ],
+    "insightsByYear": [
+      { "year": 2016, "count": 18 },
+      { "year": 2017, "count": 42 }
+    ],
+    "intensityByCountry": [
+      { "country": "United States of America", "avgIntensity": 11.2, "avgRelevance": 3.8 }
+    ],
+    "sectorDistribution": [
+      { "sector": "Energy", "count": 312 },
+      { "sector": "Financial services", "count": 154 }
+    ],
+    "regionDistribution": [
+      { "region": "Northern America", "count": 356 },
+      { "region": "Asia", "count": 287 }
+    ],
+    "topicRegionHeatmap": [
+      { "topic": "oil", "region": "Northern America", "avgIntensity": 14.2 }
+    ]
+  }
+}
+```
+
+---
+
+### 4. Paginated Master Insights Records
+
+#### `GET /api/insights`
+- **Description**: Returns paginated, searchable, and sortable insight documents from MongoDB matching applied filters and search keywords.
+- **Query Parameters**:
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `topic` | string | — | Filter by Topic |
+| `sector` | string | — | Filter by Sector |
+| `region` | string | — | Filter by Region |
+| `pestle` | string | — | Filter by PESTLE category |
+| `source` | string | — | Filter by Source organization |
+| `country` | string | — | Filter by Country name |
+| `end_year` | number | — | Filter by 4-digit End Year (e.g. `2025`) |
+| `search` | string | — | Case-insensitive regex search in `title` and `insight` description |
+| `sortBy` | string | `added` | Sort field: `added`, `intensity`, `relevance`, `likelihood`, `end_year` |
+| `order` | string | `desc` | Sort direction: `asc` or `desc` |
+| `page` | number | `1` | Page number (1-indexed) |
+| `limit` | number | `25` | Results per page (max `100`) |
+
+- **Response**: `200 OK`
+```json
+{
+  "success": true,
+  "count": 25,
+  "total": 906,
+  "page": 1,
+  "limit": 25,
+  "totalPages": 37,
+  "data": [
+    {
+      "_id": "64f9b8c3a1e2d45b78901234",
+      "title": "Renewable energy adoption to accelerate in Northern America",
+      "insight": "Rapid deployment of solar and wind generation capacity...",
+      "url": "http://www.eia.gov/forecasts/aeo/er/",
+      "topic": "energy",
+      "sector": "Energy",
+      "region": "Northern America",
+      "country": "United States of America",
+      "intensity": 12,
+      "likelihood": 4,
+      "relevance": 5,
+      "pestle": "Economic",
+      "source": "EIA",
+      "start_year": 2022,
+      "end_year": 2026,
+      "added": "2023-01-20T10:45:00.000Z",
+      "published": "2023-01-15T00:00:00.000Z",
+      "impact": null
+    }
+  ]
+}
+```
+
+---
+
+### 5. Swagger Interactive Documentation
+
+#### `GET /api-docs`
+- **Description**: Interactive OpenAPI 3.0 documentation interface powered by Swagger UI. Allows real-time parameter testing and response inspection directly in the browser.
+
+---
+
+## Data Model (Mongoose Schema)
+
+```typescript
+export interface IInsight {
+  end_year: number | null;
+  intensity: number;
+  sector: string | null;
+  topic: string;
+  insight: string;
+  url: string;
+  region: string | null;
+  start_year: number | null;
+  impact: number | null;
+  added: Date;
+  published: Date | null;
+  country: string | null;
+  relevance: number;
+  pestle: string;
+  source: string;
+  title: string;
+  likelihood: number;
+}
+```
+
+---
+
+## Data Notes & Cleansing Logic
+
+1. **Missing Brief Fields**:
+   - The original assignment mentioned `city` and `swot`. The provided `jsondata.json` dataset does not contain these fields.
+   - PESTLE analysis (`pestle`) and industry categories (`sector`) are implemented as the dual-segmentation framework.
+2. **Sanitization (`server/src/utils/cleanRecord.ts`)**:
+   - Converts empty strings (`""`) into `null` to ensure accurate sparse indexing.
+   - Parses date strings into ISO `Date` objects.
+   - Converts empty numerical values to numeric defaults or `null` to prevent aggregation calculation anomalies.
+3. **Optimized Aggregations**:
+   - Distinct queries and statistical pipelines utilize `{ $nin: [null, ""] }` to ensure only valid data points are grouped.
+
+---
+
+## Setup & Running Locally
+
+### 1. Environment Configuration
+Create `.env` in the `server` root:
 ```env
 PORT=5000
-MONGO_URI=mongodb+srv://user:pass@cluster.mongodb.net/dbname
-FRONTEND_URL=http://localhost:5173
 NODE_ENV=development
+MONGO_URI=mongodb+srv://<username>:<password>@cluster0.mongodb.net/?appName=Cluster0
+FRONTEND_URL=http://localhost:5173
+CORS_ORIGIN=http://localhost:3000,http://localhost:5173
 ```
 
-## Setup Instructions
-
+### 2. Install & Seed
 ```bash
 # Install dependencies
 npm install
 
-# Seed the database
+# Ingest and seed the MongoDB database
 npm run seed
+```
 
-# Start development server
+### 3. Run Server
+```bash
+# Start development server with live reload (tsx watch)
 npm run dev
 
-# Run tests
+# Run automated tests
 npm test
 
-# Build for production
+# Build TypeScript to dist/
 npm run build
 
 # Start production server
 npm start
 ```
-
-## API Endpoints
-
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/health` | Health check & database connection status |
-| GET | `/api/insights` | Get filtered, searchable, and paginated insights |
-| GET | `/api/filters` | Get distinct values for all dropdowns |
-| GET | `/api/stats` | Get aggregated statistics across 6 chart dimensions |
-
-### Query Parameters for `/api/insights`
-
-| Param | Type | Description |
-|---|---|---|
-| `topic` | string | Filter by topic |
-| `sector` | string | Filter by sector |
-| `region` | string | Filter by region |
-| `pestle` | string | Filter by PESTLE category |
-| `source` | string | Filter by source |
-| `country` | string | Filter by country |
-| `end_year` | number | Filter by end year |
-| `search` | string | Search in title and insight |
-| `sortBy` | string | Sort field (`added`, `intensity`, `relevance`, `likelihood`, `end_year`) |
-| `order` | string | Sort order (`asc`, `desc`) |
-| `page` | number | Page number (default: 1) |
-| `limit` | number | Items per page (default: 25, max: 100) |
-
-## Data Notes
-
-The original project brief references a "SWOT filter," but the dataset does not contain a SWOT field. The dashboard uses `pestle` (PESTLE categories) and `sector` (industry sectors) as the dual-filter system instead. The `city` field is also absent from the dataset and has been excluded from the API.
-
-## Swagger Documentation
-
-Interactive API documentation is available at `http://localhost:5000/api-docs` when the server is running.
