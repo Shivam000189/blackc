@@ -1,99 +1,89 @@
-# Blackcoffer Dashboard API
+# Blackcoffer Data Visualization Dashboard & Analytics Platform
 
-Node.js + TypeScript + Express + MongoDB backend for the data visualization dashboard.
+A production-ready fullstack analytics suite built with React 19, TypeScript, Tailwind CSS, Express, MongoDB, and Recharts.
 
-## Tech Stack
+---
 
-- **Runtime:** Node.js + TypeScript
-- **Framework:** Express.js
-- **Database:** MongoDB (Mongoose ODM)
-- **Validation:** Zod
-- **Documentation:** Swagger UI
-- **Testing:** Jest + Supertest
-- **Security & Performance:** Helmet, CORS, Express Rate Limit, Compression, Morgan
+## Architecture & Features
 
-## Project Structure
+- **Frontend (Client)**:
+  - React 19 + TypeScript + Vite 8
+  - Tailwind CSS + Lucide Icons + Recharts
+  - Split production chunks (`vendor-react`, `vendor-charts`, `vendor-icons`, `vendor-http`)
+  - Live filtering across 7 dimensions (Topic, Sector, Region, PESTLE, Source, Country, End Year)
+  - 6 KPI Stat Cards, 7 Visualization Charts, and a Master Raw Records Table with pagination, sorting & detail modals
+  - Collapsible & hover-responsive sidebar navigation
 
-```
-src/
-├── __tests__/          # Jest test suites
-├── config/             # Swagger configuration & DB/Env
-├── controllers/        # Route handlers
-├── middleware/         # Validation, pagination, error handling
-├── models/             # Mongoose schemas
-├── routes/             # API route definitions
-├── schemas/            # Zod validation schemas
-├── scripts/            # Database seed script
-├── types/              # TypeScript interfaces
-├── utils/              # Helper functions
-└── server.ts           # Application entry point
-```
+- **Backend (Server)**:
+  - Node.js + Express + TypeScript
+  - MongoDB Atlas via Mongoose ODM
+  - Aggregation pipeline for multi-dimensional statistical metrics
+  - Robust security: Helmet, CORS whitelist, rate limiting, and gzip compression
+  - Graceful shutdown handling (`SIGTERM` & `SIGINT`)
+  - Interactive Swagger API Documentation (`/api-docs`)
 
-## Environment Variables
+---
 
-Create a `.env` file in the `server` root:
+## Production Build & Deployment
 
-```env
-PORT=5000
-MONGO_URI=mongodb+srv://user:pass@cluster.mongodb.net/dbname
-FRONTEND_URL=http://localhost:5173
-NODE_ENV=development
-```
-
-## Setup Instructions
+### 1. Root Monorepo Commands
 
 ```bash
-cd server
-
-# Install dependencies
+# Install root dependencies
 npm install
 
-# Seed the database
-npm run seed
-
-# Start development server
-npm run dev
-
-# Run tests
-npm test
-
-# Build for production
+# Build both backend and frontend for production
 npm run build
 
-# Start production server
-npm start
+# Seed the database (if not yet populated)
+npm run server:seed
+
+# Start backend in production
+npm run server:start
+
+# Preview frontend production build locally
+npm run client:preview
 ```
 
-## API Endpoints
+---
+
+## Deploying Backend (e.g. Render / Railway / Heroku)
+
+1. Set the root directory to `server`.
+2. **Build Command**: `npm install && npm run build`
+3. **Start Command**: `npm start`
+4. **Environment Variables**:
+   ```env
+   NODE_ENV=production
+   PORT=5000
+   MONGO_URI=mongodb+srv://<user>:<password>@cluster.mongodb.net/?appName=Cluster0
+   FRONTEND_URL=https://your-frontend-domain.vercel.app
+   CORS_ORIGIN=https://your-frontend-domain.vercel.app
+   ```
+
+---
+
+## Deploying Frontend (e.g. Vercel / Netlify / Cloudflare Pages)
+
+1. Set the root directory to `client`.
+2. **Framework Preset**: Vite
+3. **Build Command**: `npm run build`
+4. **Output Directory**: `dist`
+5. **Environment Variables**:
+   ```env
+   VITE_API_URL=https://your-backend-domain.onrender.com/api
+   ```
+6. SPA URL rewrite configuration is provided in [`client/vercel.json`](client/vercel.json).
+
+---
+
+## API Endpoints Reference
 
 | Method | Endpoint | Description |
 |---|---|---|
 | GET | `/health` | Health check & database connection status |
-| GET | `/api/insights` | Get filtered, searchable, and paginated insights |
-| GET | `/api/filters` | Get distinct values for all dropdowns |
-| GET | `/api/stats` | Get aggregated statistics across 6 chart dimensions |
+| GET | `/api/insights` | Filtered, searchable, and paginated insights list |
+| GET | `/api/filters` | Distinct filter options for all dropdown selectors |
+| GET | `/api/stats` | Aggregated statistical data across 6 chart dimensions |
+| GET | `/api-docs` | Interactive Swagger API documentation |
 
-### Query Parameters for `/api/insights`
-
-| Param | Type | Description |
-|---|---|---|
-| `topic` | string | Filter by topic |
-| `sector` | string | Filter by sector |
-| `region` | string | Filter by region |
-| `pestle` | string | Filter by PESTLE category |
-| `source` | string | Filter by source |
-| `country` | string | Filter by country |
-| `end_year` | number | Filter by end year |
-| `search` | string | Search in title and insight |
-| `sortBy` | string | Sort field (`added`, `intensity`, `relevance`, `likelihood`, `end_year`) |
-| `order` | string | Sort order (`asc`, `desc`) |
-| `page` | number | Page number (default: 1) |
-| `limit` | number | Items per page (default: 25, max: 100) |
-
-## Data Notes
-
-The original project brief references a "SWOT filter," but the dataset does not contain a SWOT field. The dashboard uses `pestle` (PESTLE categories) and `sector` (industry sectors) as the dual-filter system instead. The `city` field is also absent from the dataset and has been excluded from the API.
-
-## Swagger Documentation
-
-Interactive API documentation is available at `http://localhost:5000/api-docs` when the server is running.

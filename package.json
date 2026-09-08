@@ -5,11 +5,16 @@
   "scripts": {
     "server:dev": "npm --prefix server run dev",
     "server:seed": "npm --prefix server run seed",
+    "server:build": "npm --prefix server run build",
+    "server:start": "npm --prefix server run start",
     "client:dev": "npm --prefix client run dev",
     "client:build": "npm --prefix client run build",
+    "client:preview": "npm --prefix client run preview",
+    "build": "npm --prefix server run build && npm --prefix client run build",
     "dev": "concurrently \"npm run server:dev\" \"npm run client:dev\""
   },
   "devDependencies": {
     "concurrently": "^9.1.2"
   }
 }
+
