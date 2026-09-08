@@ -2,7 +2,6 @@ import express, { Application } from "express";
 import cors from "cors";
 import helmet from "helmet";
 import compression from "compression";
-import morgan from "morgan";
 import rateLimit from "express-rate-limit";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
@@ -17,10 +16,34 @@ const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI as string;
 
 // Security & CORS
-app.use(helmet());
+app.use(
+  helmet({
+    crossOriginResourcePolicy: false,
+  })
+);
+
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "http://localhost:3000",
+  "http://127.0.0.1:5173",
+  "http://127.0.0.1:5174",
+].filter(Boolean) as string[];
+
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:5173",
+    origin: (origin, callback) => {
+      if (
+        !origin ||
+        allowedOrigins.includes(origin) ||
+        /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)
+      ) {
+        callback(null, true);
+      } else {
+        callback(null, true);
+      }
+    },
     credentials: true,
   })
 );
@@ -30,17 +53,14 @@ app.use(
   "/api",
   rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 100,
+    max: process.env.NODE_ENV === "production" ? 500 : 5000,
     standardHeaders: true,
     legacyHeaders: false,
     message: { success: false, message: "Too many requests, please try again later." },
   })
 );
 
-// Logging & Compression
-if (process.env.NODE_ENV !== "test") {
-  app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
-}
+// Compression
 app.use(compression());
 
 // Body Parsing
