@@ -6,11 +6,10 @@ An interactive full-stack data visualization dashboard and analytics platform bu
 
 ## Live Links
 
-- **Frontend Live Demo**: [Frontend Live Demo](TODO: deploy and add link)
-- **Backend API Endpoint**: [Backend API](TODO: deploy and add link)
-- **Interactive Swagger Documentation**: [Swagger UI Docs](TODO: deploy and add link / http://localhost:5000/api-docs)
+- **Frontend Live Demo**: https://client-balckc.vercel.app/ 
+- **Backend API Endpoint**: https://blackc.onrender.com
+- **Interactive Swagger Documentation**: https://blackc.onrender.com/api-docs
 
----
 
 ## Tech Stack
 
